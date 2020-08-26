@@ -81,11 +81,12 @@ namespace SmartGlass.Messaging.Session
             Task.Run(async () =>
             {
                 _lastReceived = DateTime.Now;
-                while (!_cancellationTokenSource.IsCancellationRequested) {
+                while (!_cancellationTokenSource.IsCancellationRequested)
+                {
                     try
                     {
                         await SendMessageAckAsync(requestAck: true);
-					}
+                    }
                     catch (Exception ex)
                     {
                         logger.LogError("Error sending heartbeat", ex);
