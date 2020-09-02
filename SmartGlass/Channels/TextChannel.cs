@@ -17,6 +17,15 @@ namespace SmartGlass.Channels
         private bool _disposed = false;
         private readonly ChannelMessageTransport _transport;
         private static readonly ILogger logger = Logging.Factory.CreateLogger<TextChannel>();
+        private uint current_text_version = 0;
+        private SystemTextConfigurationMessage session_config;
+        private SystemTextInputMessage current_session_input;
+
+        private bool is_first_session = true;
+        public EventHandler SystemTextConfigurationMessageReceived;
+        public EventHandler SystemTextDoneMessageReceived;
+        public EventHandler SystemTextInputMessageReceived;
+        public string CurrentSessionInputChunk => current_session_input?.TextChunk;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:SmartGlass.Channels.TextChannel"/> class.
@@ -28,15 +37,18 @@ namespace SmartGlass.Channels
             _transport.MessageReceived += OnMessageReceived;
         }
 
-
+        /// <summary>
+        /// Appends the text to the current on screen text input
+        /// </summary>
+        /// <param name="text">String to append</param>
         public Task AppendText(String text)
         {
-            return OverrideText(CurrentSessionInput() + text);
+            return OverrideText(CurrentSessionInputChunk + text);
         }
-        public string CurrentSessionInput()
-        {
-            return current_session_input?.TextChunk;
-        }
+        /// <summary>
+        /// Overrides the text on screen with this input
+        /// </summary>
+        /// <param name="text">String to override with</param>
         public async Task OverrideText(String text)
         {
             var new_version = current_text_version + 1;
@@ -54,6 +66,9 @@ namespace SmartGlass.Channels
             await _transport.SendAsync(msg);
             current_session_input = msg;
         }
+        /// <summary>
+        /// Accepts the current input dialog
+        /// </summary>
         public async Task AcceptTextInput()
         {
             var done = new SystemTextDoneMessage
@@ -65,9 +80,6 @@ namespace SmartGlass.Channels
             await _transport.SendAsync(done);
 
         }
-        private uint current_text_version = 0;
-        private SystemTextConfigurationMessage session_config;
-        private SystemTextInputMessage current_session_input;
         private void ResetSession()
         {
             session_config = null;
@@ -75,10 +87,7 @@ namespace SmartGlass.Channels
             current_text_version = 0;
 
         }
-        private bool is_first_session = true;
-        public EventHandler SystemTextConfigurationMessageReceived;
-        public EventHandler SystemTextDoneMessageReceived;
-        public EventHandler SystemTextInputMessageReceived;
+
 
         private async void OnMessageReceived(object sender, MessageReceivedEventArgs<SessionMessageBase> e)
         {
